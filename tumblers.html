@@ -1,0 +1,533 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#14110d">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="description" content="Tumblers — a daily safe-cracking logic puzzle.">
+<title>Tumblers</title>
+<style>
+  :root{
+    --bg:#14110d;
+    --steel:#221d17;
+    --steel-2:#2b251d;
+    --line:rgba(255,255,255,.10);
+    --text:#f2ece0;
+    --dim:#9a8f7d;
+    --brass:#e0b352;
+    --brass-2:#f5d68a;
+    --green:#7fc98a;
+    --red:#e0716b;
+    --bar:78px;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{height:100%}
+  body{
+    margin:0;background:var(--bg);color:var(--text);
+    font:15px/1.45 ui-rounded,-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+    overflow:hidden;overscroll-behavior:none;touch-action:manipulation;
+    -webkit-user-select:none;user-select:none;
+  }
+  body::before{content:"";position:fixed;inset:0;z-index:-1;
+    background:radial-gradient(90% 60% at 50% -10%,#2e2519,transparent 70%)}
+
+  header{position:fixed;top:0;left:0;right:0;z-index:5;
+    padding:calc(env(safe-area-inset-top) + 12px) 16px 10px;
+    display:flex;align-items:center;gap:10px;
+    background:linear-gradient(var(--bg),rgba(20,17,13,.9) 65%,transparent)}
+  .brand{flex:1;min-width:0}
+  .brand h1{margin:0;font-size:19px;letter-spacing:3.5px;font-weight:800;color:var(--brass)}
+  .brand .sub{font-size:11.5px;color:var(--dim);letter-spacing:.4px;margin-top:1px}
+  .iconbtn{width:38px;height:38px;flex:0 0 auto;border-radius:11px;border:1px solid var(--line);
+    background:var(--steel);color:var(--dim);font:inherit;font-size:16px;display:grid;place-items:center}
+  .streak{font-size:12px;font-weight:800;color:var(--brass);background:rgba(224,179,82,.12);
+    border:1px solid rgba(224,179,82,.25);border-radius:99px;padding:5px 10px;white-space:nowrap}
+
+  main{position:fixed;inset:0;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;
+    padding:calc(env(safe-area-inset-top) + 74px) 14px calc(var(--bar) + env(safe-area-inset-bottom) + 18px)}
+
+  /* ---------------- safe ---------------- */
+  .safe{background:linear-gradient(165deg,var(--steel-2),var(--steel));
+    border:1px solid var(--line);border-radius:20px;padding:16px 12px;
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.06),0 12px 30px rgba(0,0,0,.45)}
+  .safe.shake{animation:shake .4s}
+  @keyframes shake{10%,90%{transform:translateX(-2px)}20%,80%{transform:translateX(4px)}
+    30%,50%,70%{transform:translateX(-7px)}40%,60%{transform:translateX(7px)}}
+  .safe.open{border-color:rgba(127,201,138,.5);box-shadow:0 0 34px rgba(127,201,138,.22)}
+  .range{text-align:center;font-size:10.5px;letter-spacing:1.5px;text-transform:uppercase;
+    color:var(--dim);margin:0 0 12px;font-weight:700}
+  .dials{display:flex;justify-content:center;gap:6px}
+  .dial{flex:1;max-width:64px;display:flex;flex-direction:column;align-items:center;gap:4px}
+  .dial .cap{font-size:10px;letter-spacing:.8px;color:var(--dim);font-weight:700}
+  .chev{width:100%;height:30px;border:0;border-radius:9px;background:rgba(255,255,255,.05);
+    color:var(--dim);font:inherit;font-size:12px;display:grid;place-items:center}
+  .chev:active{background:rgba(224,179,82,.22);color:var(--brass-2)}
+  .win{width:100%;aspect-ratio:1/1.05;border:1px solid var(--line);border-radius:12px;
+    background:linear-gradient(#171310,#0d0b08);display:grid;place-items:center;
+    font-size:27px;font-weight:800;color:var(--brass-2);
+    text-shadow:0 2px 6px rgba(0,0,0,.7);position:relative;overflow:hidden}
+  .win::after{content:"";position:absolute;inset:0;
+    background:linear-gradient(180deg,rgba(255,255,255,.10),transparent 42%,rgba(0,0,0,.35))}
+  .dial.hl .win{border-color:var(--brass);box-shadow:0 0 0 2px rgba(224,179,82,.35) inset}
+  .dial.locked .win{color:var(--green)}
+  .dial.locked .chev{opacity:.25}
+  .dial .num{position:relative;z-index:1}
+
+  .metaline{display:flex;justify-content:space-between;font-size:12px;color:var(--dim);
+    margin:10px 4px 0;letter-spacing:.3px}
+
+  /* ---------------- clues ---------------- */
+  h2{font-size:11.5px;letter-spacing:1.6px;text-transform:uppercase;color:var(--dim);
+    margin:20px 4px 9px;font-weight:800}
+  .clue{display:flex;align-items:flex-start;gap:11px;width:100%;text-align:left;
+    background:var(--steel);border:1px solid var(--line);border-radius:13px;
+    padding:12px 13px;margin-bottom:7px;color:var(--text);font:inherit;font-size:14.5px;
+    transition:opacity .15s,border-color .15s,transform .06s}
+  .clue:active{transform:scale(.99)}
+  .clue .n{flex:0 0 21px;height:21px;border-radius:7px;background:rgba(224,179,82,.14);
+    color:var(--brass);font-size:11px;font-weight:800;display:grid;place-items:center;margin-top:1px}
+  .clue.struck{opacity:.4}
+  .clue.struck .t{text-decoration:line-through}
+  .clue.lit{border-color:rgba(224,179,82,.5)}
+
+  .note{font-size:12.5px;color:var(--dim);line-height:1.6;padding:0 4px;margin:14px 0 0}
+
+  /* ---------------- bottom bar ---------------- */
+  .bar{position:fixed;left:0;right:0;bottom:0;z-index:6;display:flex;gap:9px;
+    padding:11px 14px calc(11px + env(safe-area-inset-bottom));
+    background:rgba(20,17,13,.94);backdrop-filter:blur(14px);border-top:1px solid var(--line)}
+  .btn{flex:1;padding:15px;border-radius:14px;border:0;font:inherit;font-weight:800;font-size:16px;
+    background:linear-gradient(90deg,var(--brass),var(--brass-2));color:#20180a}
+  .btn:disabled{background:rgba(255,255,255,.07);color:var(--dim)}
+  .btn.alt{flex:0 0 116px;background:var(--steel);border:1px solid var(--line);color:var(--dim);font-size:14px}
+
+  /* ---------------- modal ---------------- */
+  .modal{position:fixed;inset:0;z-index:20;display:none;place-items:center;padding:22px;
+    background:rgba(8,6,4,.86);backdrop-filter:blur(5px)}
+  .modal.on{display:grid}
+  .sheet{width:100%;max-width:360px;max-height:82vh;overflow-y:auto;background:#1c1813;
+    border:1px solid var(--line);border-radius:22px;padding:24px}
+  .sheet h3{margin:0 0 6px;font-size:22px;text-align:center;letter-spacing:.4px}
+  .sheet .lede{margin:0 0 16px;text-align:center;color:var(--dim);font-size:13.5px}
+  .grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:16px}
+  .box{background:var(--steel);border:1px solid var(--line);border-radius:13px;padding:11px 8px;text-align:center}
+  .box i{display:block;font-style:normal;font-size:10px;letter-spacing:.7px;text-transform:uppercase;color:var(--dim)}
+  .box b{display:block;font-size:19px;margin-top:3px;font-weight:800;color:var(--brass)}
+  .sheet p{font-size:14px;color:var(--dim);line-height:1.65}
+  .sheet p b{color:var(--text)}
+  .sheet .btn{width:100%;margin-top:9px}
+  .modes{display:flex;flex-direction:column;gap:8px}
+  .mode{display:flex;align-items:center;gap:12px;width:100%;text-align:left;background:var(--steel);
+    border:1px solid var(--line);border-radius:14px;padding:13px;color:var(--text);font:inherit}
+  .mode.sel{border-color:var(--brass);background:rgba(224,179,82,.10)}
+  .mode .mi{font-size:22px}
+  .mode .mn{font-weight:700}
+  .mode .md{font-size:12px;color:var(--dim);margin-top:1px}
+
+  #toast{position:fixed;left:50%;transform:translateX(-50%);
+    bottom:calc(var(--bar) + env(safe-area-inset-bottom) + 20px);z-index:15;
+    background:#2b251d;border:1px solid var(--line);border-radius:99px;padding:9px 18px;
+    font-size:13px;font-weight:700;opacity:0;transition:opacity .25s;pointer-events:none}
+  #toast.on{opacity:1}
+</style>
+</head>
+<body>
+
+<header>
+  <button class="iconbtn" id="help">?</button>
+  <div class="brand"><h1>TUMBLERS</h1><div class="sub" id="sub">Daily #1</div></div>
+  <div class="streak" id="streak">🔥 0</div>
+  <button class="iconbtn" id="modes">⚙</button>
+</header>
+
+<main>
+  <div class="safe" id="safe"><div class="range" id="range"></div><div class="dials" id="dials"></div></div>
+  <div class="metaline"><span id="meta-left">0 attempts</span><span id="meta-right">No hints used</span></div>
+
+  <h2>Clues</h2>
+  <div id="clues"></div>
+  <p class="note">Exactly one combination fits every clue — you never have to guess.
+    Tap a clue to cross it off once you've used it.</p>
+</main>
+
+<div class="bar">
+  <button class="btn alt" id="hint">Hint</button>
+  <button class="btn" id="crack">Crack it</button>
+</div>
+
+<div class="modal" id="m-win"><div class="sheet">
+  <h3 id="w-title">Cracked it</h3>
+  <p class="lede" id="w-lede"></p>
+  <div class="grid">
+    <div class="box"><i>Attempts</i><b id="w-att">1</b></div>
+    <div class="box"><i>Time</i><b id="w-time">0:00</b></div>
+    <div class="box"><i>Hints</i><b id="w-hint">0</b></div>
+  </div>
+  <button class="btn" id="w-share">Share result</button>
+  <button class="btn alt" id="w-practice" style="flex:none">Practice puzzle</button>
+  <button class="btn alt" id="w-close" style="flex:none">Close</button>
+</div></div>
+
+<div class="modal" id="m-help"><div class="sheet">
+  <h3>How to play</h3>
+  <p class="lede">Crack the safe using logic alone.</p>
+  <p>Each dial hides a number. The clues below the safe are all true, and exactly
+     <b>one</b> combination satisfies every one of them — so there is always a path
+     to the answer by pure reasoning. No guessing required.</p>
+  <p style="margin-top:12px">Use the arrows to set each dial, then hit <b>Crack it</b>.
+     A wrong attempt costs you nothing but a tick on the counter.</p>
+  <p style="margin-top:12px">Stuck? A <b>hint</b> locks one dial to its correct value.
+     Everyone gets the same daily safe, and your streak grows for each day you crack it.</p>
+  <button class="btn" id="h-close">Got it</button>
+</div></div>
+
+<div class="modal" id="m-modes"><div class="sheet">
+  <h3>Puzzles</h3>
+  <p class="lede">The daily is the same for everyone. Practice is unlimited.</p>
+  <div class="modes" id="modelist"></div>
+  <button class="btn alt" id="mo-close" style="flex:none;margin-top:12px">Close</button>
+</div></div>
+
+<div id="toast"></div>
+
+<script>
+"use strict";
+const $ = s => document.querySelector(s);
+const KEY = "tumblers.v1";
+const EPOCH = Date.UTC(2026, 0, 1);          // puzzle #1
+
+/* ===================== seeded rng ===================== */
+function hashStr(s){
+  let h = 2166136261;
+  for(let i = 0; i < s.length; i++) h = Math.imul(h ^ s.charCodeAt(i), 16777619);
+  return h >>> 0;
+}
+function rngFrom(seed){
+  let a = seed >>> 0;
+  return function(){
+    a = a + 0x6D2B79F5 | 0;
+    let t = Math.imul(a ^ a >>> 15, 1 | a);
+    t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
+    return ((t ^ t >>> 14) >>> 0) / 4294967296;
+  };
+}
+const pick = (rng, arr) => arr[Math.floor(rng()*arr.length)];
+function shuffle(rng, arr){
+  for(let i = arr.length-1; i > 0; i--){ const j = Math.floor(rng()*(i+1)); [arr[i],arr[j]] = [arr[j],arr[i]]; }
+  return arr;
+}
+
+/* ===================== modes ===================== */
+const MODES = {
+  easy:  {id:"easy",  icon:"🔓", name:"Warm-up", dials:4, vals:5, min:3, max:6, desc:"4 dials, numbers 1–5"},
+  daily: {id:"daily", icon:"🔐", name:"Standard", dials:5, vals:6, min:4, max:7, desc:"5 dials, numbers 1–6"},
+  hard:  {id:"hard",  icon:"🔒", name:"Vault",    dials:6, vals:6, min:5, max:9, desc:"6 dials, numbers 1–6"},
+};
+
+/* ===================== clue generation ===================== */
+// Every maker returns clues that are TRUE for the given solution.
+function candidateClues(sol, M){
+  const n = M.dials, V = M.vals, out = [];
+  const add = (w, dials, text, test) => out.push({w, dials, text, test});
+  const D = i => "dial " + (i+1);
+  const Dc = i => "Dial " + (i+1);
+  const sum = a => a.reduce((x,y) => x+y, 0);
+
+  for(let i = 0; i < n; i++){
+    for(let j = 0; j < n; j++){
+      if(i === j) continue;
+      if(sol[i] > sol[j])  add(1,[i,j], Dc(i) + " is higher than " + D(j), c => c[i] > c[j]);
+      if(i < j){
+        if(sol[i] === sol[j]) add(1,[i,j], Dc(i) + " and " + D(j) + " show the same number", c => c[i] === c[j]);
+        else                  add(3,[i,j], Dc(i) + " and " + D(j) + " show different numbers", c => c[i] !== c[j]);
+        const d = Math.abs(sol[i]-sol[j]);
+        if(d === 1) add(1,[i,j], Dc(i) + " and " + D(j) + " are consecutive numbers", c => Math.abs(c[i]-c[j]) === 1);
+        else if(d > 1) add(2,[i,j], Dc(i) + " and " + D(j) + " differ by " + d, c => Math.abs(c[i]-c[j]) === d);
+        add(1,[i,j], Dc(i) + " and " + D(j) + " add up to " + (sol[i]+sol[j]), c => c[i]+c[j] === sol[i]+sol[j]);
+      }
+    }
+    add(1,[i], Dc(i) + " is " + (sol[i] % 2 ? "odd" : "even"), c => (c[i] % 2) === (sol[i] % 2));
+    for(let k = 2; k <= V; k++){
+      if(sol[i] < k) add(2,[i], Dc(i) + " is lower than " + k, c => c[i] < k);
+      if(sol[i] > k-1 && k-1 >= 1) add(2,[i], Dc(i) + " is higher than " + (k-1), c => c[i] > k-1);
+    }
+    // strong clue — heavy weight keeps it rare
+    add(9,[i], Dc(i) + " shows " + sol[i], c => c[i] === sol[i]);
+    if(sol.every((v,k) => k === i || v < sol[i])) add(2,[i], Dc(i) + " shows the highest number on the safe", c => c.every((v,k) => k === i || v < c[i]));
+    if(sol.every((v,k) => k === i || v > sol[i])) add(2,[i], Dc(i) + " shows the lowest number on the safe", c => c.every((v,k) => k === i || v > c[i]));
+  }
+
+  const allD = sol.map((_,i) => i);
+  add(2, allD, "The five dials add up to " + sum(sol), c => sum(c) === sum(sol));
+  if(n !== 5) out[out.length-1].text = "All " + n + " dials add up to " + sum(sol);
+
+  const evens = sol.filter(v => v%2 === 0).length;
+  add(2, allD, "Exactly " + word(evens) + " dial" + (evens === 1 ? "" : "s") + " show" + (evens === 1 ? "s" : "") + " an even number", c => c.filter(v => v%2===0).length === evens);
+
+  for(let v = 1; v <= V; v++){
+    const k = sol.filter(x => x === v).length;
+    if(k === 0) add(2, allD, "No dial shows " + v, c => !c.includes(v));
+    else add(2, allD, "Exactly " + word(k) + " dial" + (k===1?"":"s") + " show" + (k===1?"s":"") + " " + v, c => c.filter(x => x===v).length === k);
+  }
+  return out;
+}
+function word(k){ return ["no","one","two","three","four","five","six"][k] || String(k); }
+
+function allCombos(n, V){
+  let out = [[]];
+  for(let i = 0; i < n; i++){
+    const next = [];
+    for(const c of out) for(let v = 1; v <= V; v++) next.push(c.concat(v));
+    out = next;
+  }
+  return out;
+}
+
+function buildPuzzle(seedStr, M){
+  const universe = allCombos(M.dials, M.vals);
+  for(let attempt = 0; attempt < 60; attempt++){
+    const rng = rngFrom(hashStr(seedStr + "#" + attempt));
+    const sol = Array.from({length:M.dials}, () => 1 + Math.floor(rng()*M.vals));
+
+    // cheap weighted shuffle: low weight sorts first, ties broken randomly
+    const pool = candidateClues(sol, M).map(c => ({c, k: c.w + rng()}));
+    pool.sort((a,b) => a.k - b.k);
+
+    let alive = universe, chosen = [];
+    for(const {c} of pool){
+      const next = alive.filter(c.test);
+      if(next.length === alive.length) continue;      // clue tells us nothing new
+      chosen.push(c); alive = next;
+      if(alive.length === 1) break;
+    }
+    if(alive.length !== 1) continue;
+
+    // drop any clue the rest already implies
+    for(let i = chosen.length-1; i >= 0; i--){
+      const trial = chosen.slice(0,i).concat(chosen.slice(i+1));
+      if(universe.filter(c => trial.every(cl => cl.test(c))).length === 1) chosen.splice(i,1);
+    }
+    if(chosen.length < M.min || chosen.length > M.max) continue;
+
+    shuffle(rng, chosen);
+    return {sol, clues: chosen};
+  }
+  return null;                                        // caller falls back to another seed
+}
+
+/* ===================== state ===================== */
+let store = {streak:0, best:0, lastWin:null, daily:{}};
+let mode = MODES.daily, puzzle = null, dials = [], locked = [],
+    attempts = 0, hints = 0, struck = [], started = 0, solved = false, practiceSeed = 0;
+
+const todayKey = () => { const d = new Date(); return d.getFullYear() + "-" + (d.getMonth()+1) + "-" + d.getDate(); };
+function dailyNumber(){
+  const d = new Date(), local = Date.UTC(d.getFullYear(), d.getMonth(), d.getDate());
+  return Math.max(1, Math.round((local - EPOCH)/86400000) + 1);
+}
+const isDaily = () => mode === MODES.daily && !practiceSeed;
+
+function load(){
+  try{ const raw = localStorage.getItem(KEY); if(raw) store = Object.assign(store, JSON.parse(raw)); }catch(e){}
+}
+function persist(){ try{ localStorage.setItem(KEY, JSON.stringify(store)); }catch(e){} }
+
+function newPuzzle(seedStr){
+  let p = null, salt = 0;
+  while(!p && salt < 40) p = buildPuzzle(seedStr + (salt ? ":" + salt : ""), mode), salt++;
+  puzzle  = p;
+  dials   = new Array(mode.dials).fill(1);
+  locked  = new Array(mode.dials).fill(false);
+  struck  = new Array(puzzle.clues.length).fill(false);
+  attempts = 0; hints = 0; solved = false; started = 0;
+}
+
+function startDaily(){
+  mode = MODES.daily; practiceSeed = 0;
+  newPuzzle("daily:" + todayKey());
+  const saved = store.daily[todayKey()];
+  if(saved){
+    dials = saved.dials.slice(); locked = saved.locked.slice(); struck = saved.struck.slice();
+    attempts = saved.attempts; hints = saved.hints; solved = saved.solved; started = saved.started || 0;
+  }
+  render();
+}
+function startPractice(m){
+  mode = m; practiceSeed = Date.now();
+  newPuzzle("practice:" + practiceSeed);
+  render();
+}
+function saveDaily(){
+  if(!isDaily()) return;
+  store.daily = {[todayKey()]: {dials, locked, struck, attempts, hints, solved, started}};
+  persist();
+}
+
+/* ===================== render ===================== */
+function render(){
+  $("#sub").textContent = isDaily()
+    ? "Daily #" + dailyNumber() + " · " + new Date().toLocaleDateString(undefined,{month:"short",day:"numeric"})
+    : mode.name + " · practice";
+  $("#streak").textContent = "🔥 " + store.streak;
+  $("#range").textContent = "Every dial is a number from 1 to " + mode.vals;
+
+  const box = $("#dials"); box.innerHTML = "";
+  dials.forEach((v,i) => {
+    const el = document.createElement("div");
+    el.className = "dial" + (locked[i] ? " locked" : "");
+    el.innerHTML = '<div class="cap">' + (i+1) + '</div>' +
+      '<button class="chev up">▲</button>' +
+      '<div class="win"><span class="num">' + v + '</span></div>' +
+      '<button class="chev down">▼</button>';
+    if(!locked[i] && !solved){
+      el.querySelector(".up").onclick   = () => step(i, 1);
+      el.querySelector(".down").onclick = () => step(i, -1);
+      el.querySelector(".win").onclick  = () => step(i, 1);
+    }
+    box.appendChild(el);
+  });
+
+  const cl = $("#clues"); cl.innerHTML = "";
+  puzzle.clues.forEach((c,i) => {
+    const el = document.createElement("button");
+    el.className = "clue" + (struck[i] ? " struck" : "");
+    el.innerHTML = '<span class="n">' + (i+1) + '</span><span class="t">' + c.text + '</span>';
+    el.onclick = () => { struck[i] = !struck[i]; el.classList.toggle("struck", struck[i]); flash(c.dials); saveDaily(); };
+    cl.appendChild(el);
+  });
+
+  $("#meta-left").textContent  = attempts + (attempts === 1 ? " attempt" : " attempts");
+  $("#meta-right").textContent = hints ? hints + (hints === 1 ? " hint used" : " hints used") : "No hints used";
+  $("#crack").textContent = solved ? "Cracked" : "Crack it";
+  $("#crack").disabled = solved;
+  $("#hint").disabled  = solved || locked.every(Boolean);
+  $("#safe").classList.toggle("open", solved);
+}
+
+function step(i, d){
+  if(!started) started = Date.now();
+  dials[i] = ((dials[i] - 1 + d + mode.vals) % mode.vals) + 1;
+  const el = $("#dials").children[i].querySelector(".num");
+  el.textContent = dials[i];
+  if(navigator.vibrate) navigator.vibrate(5);
+  saveDaily();
+}
+function flash(list){
+  const kids = $("#dials").children;
+  list.forEach(i => { kids[i].classList.add("hl"); setTimeout(() => kids[i].classList.remove("hl"), 900); });
+}
+
+/* ===================== actions ===================== */
+function crack(){
+  if(solved) return;
+  if(!started) started = Date.now();
+  attempts++;
+  const ok = dials.every((v,i) => v === puzzle.sol[i]);
+  if(!ok){
+    const s = $("#safe");
+    s.classList.remove("shake"); void s.offsetWidth; s.classList.add("shake");
+    if(navigator.vibrate) navigator.vibrate([25,45,25]);
+    toast(attempts === 1 ? "Not quite — nothing lost, try again" : "Still locked");
+    render(); saveDaily();
+    return;
+  }
+  solved = true;
+  if(navigator.vibrate) navigator.vibrate([12,40,12,40,60]);
+  if(isDaily()) recordWin();
+  render(); saveDaily(); showWin();
+}
+function recordWin(){
+  const t = todayKey();
+  if(store.lastWin === t) return;
+  const y = new Date(Date.now() - 86400000);
+  const yKey = y.getFullYear() + "-" + (y.getMonth()+1) + "-" + y.getDate();
+  store.streak = store.lastWin === yKey ? store.streak + 1 : 1;
+  store.best = Math.max(store.best || 0, store.streak);
+  store.lastWin = t;
+  persist();
+}
+function useHint(){
+  if(solved) return;
+  const open = puzzle.sol.map((_,i) => i).filter(i => !locked[i] && dials[i] !== puzzle.sol[i]);
+  const pool = open.length ? open : puzzle.sol.map((_,i) => i).filter(i => !locked[i]);
+  if(!pool.length) return toast("Every dial is already correct");
+  if(!started) started = Date.now();
+  const i = pool[Math.floor(Math.random()*pool.length)];
+  dials[i] = puzzle.sol[i]; locked[i] = true; hints++;
+  toast("Dial " + (i+1) + " locked in");
+  render(); saveDaily();
+}
+
+const elapsed = () => started ? Math.round((Date.now()-started)/1000) : 0;
+const mmss = s => Math.floor(s/60) + ":" + String(s%60).padStart(2,"0");
+
+function showWin(){
+  const s = elapsed();
+  $("#w-title").textContent = "Cracked it";
+  $("#w-lede").textContent  = isDaily()
+    ? "Daily #" + dailyNumber() + " · streak " + store.streak + (store.best > store.streak ? " (best " + store.best + ")" : "")
+    : mode.name + " practice safe";
+  $("#w-att").textContent  = attempts;
+  $("#w-time").textContent = mmss(s);
+  $("#w-hint").textContent = hints;
+  $("#m-win").classList.add("on");
+}
+function shareText(){
+  const s = elapsed();
+  return "TUMBLERS " + (isDaily() ? "#" + dailyNumber() : mode.name + " practice") + "\n" +
+    "🔓 " + attempts + (attempts === 1 ? " attempt" : " attempts") +
+    " · " + (hints ? hints + " hint" + (hints===1?"":"s") : "no hints") +
+    " · " + mmss(s) + (isDaily() ? "\n🔥 streak " + store.streak : "");
+}
+
+/* ===================== chrome ===================== */
+let tt;
+function toast(msg){
+  const t = $("#toast"); t.textContent = msg; t.classList.add("on");
+  clearTimeout(tt); tt = setTimeout(() => t.classList.remove("on"), 1700);
+}
+function buildModes(){
+  const list = $("#modelist"); list.innerHTML = "";
+  const row = (icon, name, desc, sel, fn) => {
+    const b = document.createElement("button");
+    b.className = "mode" + (sel ? " sel" : "");
+    b.innerHTML = '<span class="mi">' + icon + '</span><span><span class="mn">' + name +
+                  '</span><span class="md">' + desc + '</span></span>';
+    b.onclick = () => { $("#m-modes").classList.remove("on"); fn(); };
+    list.appendChild(b);
+  };
+  row("📅", "Today's daily", "5 dials · same safe for everyone", isDaily(), startDaily);
+  for(const m of [MODES.easy, MODES.daily, MODES.hard])
+    row(m.icon, m.name + " practice", m.desc, !isDaily() && mode === m, () => startPractice(m));
+}
+
+$("#crack").onclick = crack;
+$("#hint").onclick  = useHint;
+$("#help").onclick  = () => $("#m-help").classList.add("on");
+$("#h-close").onclick = () => $("#m-help").classList.remove("on");
+$("#modes").onclick = () => { buildModes(); $("#m-modes").classList.add("on"); };
+$("#mo-close").onclick = () => $("#m-modes").classList.remove("on");
+$("#w-close").onclick  = () => $("#m-win").classList.remove("on");
+$("#w-practice").onclick = () => { $("#m-win").classList.remove("on"); startPractice(mode); };
+$("#w-share").onclick = async () => {
+  const text = shareText();
+  try{
+    if(navigator.share) await navigator.share({text});
+    else { await navigator.clipboard.writeText(text); toast("Result copied"); }
+  }catch(e){ if(e && e.name !== "AbortError") toast("Couldn't share"); }
+};
+document.querySelectorAll(".modal").forEach(m => m.addEventListener("click", e => {
+  if(e.target === m) m.classList.remove("on");
+}));
+document.addEventListener("gesturestart", e => e.preventDefault());
+window.addEventListener("beforeunload", saveDaily);
+
+load();
+startDaily();
+if(!store.lastWin && !store.daily[todayKey()]) $("#m-help").classList.add("on");
+if(solved) showWin();
+</script>
+</body>
+</html>
