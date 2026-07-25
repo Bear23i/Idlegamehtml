@@ -72,6 +72,16 @@ case for 6 dials.
 To make puzzles harder or easier, change `min`/`max` in `MODES` (clue count — fewer
 clues means harder) or the weights in `candidateClues()`.
 
+## Two builds
+
+- `tumblers.html` — the phone build. Fixed full-viewport layout with safe-area
+  insets, tuned for **Add to Home Screen** so it behaves like an installed app.
+- `tumblers-hosted.html` — the web build. Same tested game logic, but laid out as a
+  normal centred column so it also works on a desktop and can't collapse inside a
+  hosting frame. This is the one published as a link.
+
+Both share the identical generator and game logic; only the layout shell differs.
+
 ## Also in this repo
 
 `index.html` is **Abyss**, an idle deep-sea salvage game — built before I understood
