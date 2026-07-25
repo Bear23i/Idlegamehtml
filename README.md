@@ -35,20 +35,24 @@ necessarily blind.
 
 Progress on the daily is saved as you go, so you can close it mid-solve.
 
-### Today's puzzle, worked through
+### A worked example
 
-Solution `4 1 2 2 2`, from these five clues:
+Generated from a fixed example seed, not a live daily, so this spoils nothing.
+Solution `4 5 6 4 3`, from these five clues:
 
-1. Dial 1 is even
-2. Dial 4 and dial 5 show the same number
-3. Dial 2 and dial 4 are consecutive numbers
-4. Dial 2 and dial 3 add up to 3
-5. Dial 1 and dial 5 add up to 6
+1. Dial 2 is higher than dial 5
+2. Dial 4 and dial 5 are consecutive numbers
+3. Dial 1 and dial 4 add up to 8
+4. Dial 3 and dial 4 add up to 10
+5. Dial 1 and dial 2 are consecutive numbers
 
-From 4, dial 2 is 1 or 2. From 1 and 5, dial 1 is 2 (dial 5 = 4) or 4 (dial 5 = 2).
-Take the first: dial 5 = 4, so dial 4 = 4 by clue 2, so dial 2 is 3 or 5 by clue 3 —
-which contradicts clue 4. So dial 1 = 4, dial 5 = 2, dial 4 = 2, dial 2 = 1, dial 3 = 2.
-No guessing anywhere.
+Clue 4 leaves three options for dials 3 and 4, since neither can exceed 6:
+`(4,6)`, `(5,5)`, `(6,4)`. Clue 3 then fixes dial 1 in each case — `2`, `3`, `4`
+respectively. Now clue 1 kills two of them: with dial 4 at 6, clue 2 forces dial 5
+to 5, but clue 5 caps dial 2 at 3; with dial 4 at 5, dial 2 tops out at 4 and dial 5
+starts at 4. Only the third survives, and it resolves to dial 5 = 3, dial 2 = 5.
+
+Answer: `4 5 6 4 3`. Every step is elimination — nothing is guessed.
 
 ## The generator
 
