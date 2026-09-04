@@ -1,3 +1,85 @@
+# Games in this repo
+
+Each game is self-contained and needs no build step.
+
+| Game | File | What it is |
+| --- | --- | --- |
+| **Voidbreaker** | `index.html` + `style.css` + `game.js` | 3D low-poly arcade survival shooter (Three.js) |
+| **Tumblers** | `tumblers.html`, `tumblers-hosted.html` | Daily safe-cracking logic puzzle |
+| **Abyss** | `abyss.html` | Idle deep-sea salvage game |
+
+---
+
+# Voidbreaker
+
+A low-poly 3D arcade survival shooter. You pilot a pod in a walled arena, waves of
+geometry come for you, and the run ends when your integrity hits zero.
+
+## Launch it
+
+```sh
+npx serve .          # then open the printed URL, usually http://localhost:3000
+# or: python3 -m http.server 8000
+```
+
+Opening `index.html` straight from the filesystem works too — Three.js comes from a
+CDN (jsDelivr, falling back to unpkg), so the first load needs a connection. After
+that the browser cache covers you. There is nothing to install and no build step.
+
+## Rules
+
+- **Survive waves.** Each wave sends a larger, nastier mix. Clear it and you get a
+  wave bonus plus a small integrity top-up before the next one starts.
+- **Every fifth wave is a Warden** — a boss with its own health bar that fires
+  radial bullet patterns and, below half health, speeds up and calls in escorts.
+- **Kill for score, collect orbs to bank more.** Dead enemies scatter gold orbs
+  that magnetise to you when you get close. Orbs expire after ~15 seconds.
+- **Chain kills to raise the multiplier.** Every 4 kills inside a 3.2-second window
+  adds a tier, up to x8. Taking a hit resets the chain to zero.
+- **Dash is your defence.** You are invulnerable for the whole dash, so dashing
+  *through* a charging enemy is the correct answer. It has a ~1.2s cooldown.
+- **Power-ups** drop occasionally, and always from a Warden: `RAPID` (double fire
+  rate), `TRIPLE` (three-way spread) and `SHIELD` (absorbs one hit outright).
+- **High score persists** in `localStorage`.
+
+The hostiles: **grunts** (chase), **sprinters** (wind up, then lunge), **shooters**
+(kite at range and lead their shots), **tanks** (slow, tough, split into two grunts
+when destroyed) and the **Warden**.
+
+## Controls
+
+| Action | Keyboard / mouse | Touch |
+| --- | --- | --- |
+| Move | `WASD` or arrow keys | left stick |
+| Aim | mouse | right stick |
+| Fire | left click or `Space` | right stick (fires while held) |
+| Dash | `Shift` or right click | `DASH` button |
+| Pause | `P` or `Esc` | pause button, top right |
+| Mute | `M` | note button, top right |
+| Restart | `R` on the game-over screen | `RESTART` |
+
+## How it's built
+
+`game.js` is plain ES5-flavoured JavaScript in one IIFE — no modules, no bundler.
+
+- **All geometry is procedural.** Cones, boxes, octahedra, dodecahedra and
+  icosahedra with `flatShading`, plus a canvas-generated grid texture for the floor.
+  No models, no image files, no audio files.
+- **All sound is synthesized** with the Web Audio API — oscillators for shots and
+  pickups, filtered noise bursts for impacts and explosions, through a compressor.
+- **Everything is pooled**: bullets, enemies, pickups and spawn markers recycle
+  their meshes, and 900 explosion particles live in a single `InstancedMesh`.
+- **Hit detection is swept.** A bullet moving 62 units/second covers more ground per
+  frame than its own radius, so bullets test the *segment* they travelled against
+  each target rather than their end point — otherwise shots tunnel through enemies
+  whenever a frame runs long.
+- **The camera reframes for aspect ratio.** It pulls back on narrow screens so a
+  phone in portrait sees the same width of arena a desktop does.
+- **Quality adapts**: if the first few seconds average under 40fps, shadows switch
+  off once and stay off.
+
+---
+
 # Tumblers
 
 A daily safe-cracking logic puzzle. One HTML file, no dependencies, no build step —
@@ -88,6 +170,7 @@ Both share the identical generator and game logic; only the layout shell differs
 
 ## Also in this repo
 
-`index.html` is **Abyss**, an idle deep-sea salvage game — built before I understood
+`abyss.html` is **Abyss**, an idle deep-sea salvage game — built before I understood
 you didn't want an idle game. Left in place in case it's ever useful; ignore it
-otherwise. Its notes are in the commit history.
+otherwise. Its notes are in the commit history. (It used to be `index.html`; that
+slot now belongs to Voidbreaker so the repo has a playable landing page.)
