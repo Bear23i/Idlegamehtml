@@ -3,631 +3,148 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
-<meta name="theme-color" content="#03131c">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="description" content="Abyss — an idle deep-sea salvage game.">
-<title>Abyss</title>
-<style>
-  :root{
-    --bg:#03131c;
-    --panel:rgba(255,255,255,.06);
-    --panel-2:rgba(255,255,255,.09);
-    --line:rgba(255,255,255,.10);
-    --text:#e8f4f8;
-    --dim:#8fa8b4;
-    --gold:#ffd479;
-    --teal:#4fd1c5;
-    --pearl:#cbb6ff;
-    --bad:#ff7a7a;
-    --nav:76px;
-  }
-  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-  html,body{height:100%}
-  body{
-    margin:0;
-    font:15px/1.4 ui-rounded,-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
-    color:var(--text);
-    background:var(--bg);
-    overflow:hidden;
-    overscroll-behavior:none;
-    touch-action:manipulation;
-    -webkit-user-select:none;user-select:none;
-  }
-  #water{position:fixed;inset:0;z-index:-2;transition:background 1.2s linear}
-  #vignette{position:fixed;inset:0;z-index:-1;pointer-events:none;
-    background:radial-gradient(120% 80% at 50% 0%,transparent 30%,rgba(0,0,0,.55) 100%)}
-
-  /* ---------- top status ---------- */
-  header{
-    position:fixed;top:0;left:0;right:0;z-index:5;
-    padding:calc(env(safe-area-inset-top) + 10px) 14px 10px;
-    background:linear-gradient(#03131ce6,#03131c99 70%,transparent);
-    backdrop-filter:blur(6px);
-  }
-  .salvage{display:flex;align-items:baseline;gap:7px}
-  .salvage b{font-size:30px;font-weight:800;letter-spacing:-.5px;color:var(--gold)}
-  .salvage span{font-size:13px;color:var(--dim)}
-  .rate{font-size:13px;color:var(--teal);margin-top:1px}
-  .depthbar{margin-top:9px}
-  .depthrow{display:flex;justify-content:space-between;font-size:12px;color:var(--dim);margin-bottom:4px}
-  .depthrow b{color:var(--text);font-weight:600}
-  .track{height:5px;border-radius:99px;background:rgba(255,255,255,.10);overflow:hidden}
-  .fill{height:100%;width:0;background:linear-gradient(90deg,var(--teal),#9ae6ff);border-radius:99px;transition:width .3s}
-
-  /* ---------- scroll area ---------- */
-  main{
-    position:fixed;top:0;bottom:0;left:0;right:0;
-    padding:calc(env(safe-area-inset-top) + 118px) 12px calc(var(--nav) + env(safe-area-inset-bottom) + 16px);
-    overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;
-  }
-  .page{display:none;animation:in .18s ease}
-  .page.on{display:block}
-  @keyframes in{from{opacity:0;transform:translateY(6px)}to{opacity:1}}
-  h2{font-size:12px;letter-spacing:1.4px;text-transform:uppercase;color:var(--dim);margin:18px 4px 8px;font-weight:700}
-  h2:first-child{margin-top:2px}
-
-  /* ---------- dredge ---------- */
-  .tapwrap{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:6px 0 14px}
-  #tap{
-    position:relative;width:min(66vw,250px);aspect-ratio:1;border-radius:50%;border:0;
-    background:radial-gradient(circle at 34% 30%,#2b6b7e,#0d2c3a 62%,#07202b);
-    box-shadow:0 0 0 2px rgba(255,255,255,.10),0 0 46px rgba(79,209,197,.22),inset 0 -14px 34px rgba(0,0,0,.45);
-    color:var(--text);font:inherit;transition:transform .07s ease,box-shadow .2s;
-  }
-  #tap:active{transform:scale(.955);box-shadow:0 0 0 2px rgba(255,255,255,.18),0 0 66px rgba(79,209,197,.4),inset 0 -10px 26px rgba(0,0,0,.45)}
-  #tap .ico{font-size:46px;line-height:1}
-  #tap .lbl{margin-top:6px;font-size:12px;letter-spacing:2.6px;text-transform:uppercase;color:var(--dim)}
-  #tap .val{margin-top:3px;font-size:19px;font-weight:800;color:var(--gold)}
-  .float{position:fixed;pointer-events:none;font-weight:800;color:var(--gold);
-    text-shadow:0 2px 10px rgba(0,0,0,.6);animation:rise .85s ease-out forwards;z-index:9}
-  @keyframes rise{from{opacity:1;transform:translate(-50%,0)}to{opacity:0;transform:translate(-50%,-70px)}}
-
-  .stats{display:grid;grid-template-columns:1fr 1fr;gap:8px}
-  .stat{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:10px 12px}
-  .stat i{display:block;font-style:normal;font-size:11px;letter-spacing:.7px;text-transform:uppercase;color:var(--dim)}
-  .stat b{display:block;font-size:17px;margin-top:3px;font-weight:700}
-
-  /* ---------- cards ---------- */
-  .card{
-    display:flex;align-items:center;gap:12px;width:100%;text-align:left;
-    background:var(--panel);border:1px solid var(--line);border-radius:16px;
-    padding:12px;margin-bottom:8px;color:var(--text);font:inherit;
-    transition:background .15s,transform .07s,border-color .15s;
-  }
-  .card:active{transform:scale(.985)}
-  .card.can{background:var(--panel-2);border-color:rgba(255,212,121,.42)}
-  .card.locked{opacity:.42}
-  .card .icon{flex:0 0 44px;height:44px;display:grid;place-items:center;font-size:24px;
-    background:rgba(255,255,255,.06);border-radius:12px}
-  .card .body{flex:1;min-width:0}
-  .card .name{font-weight:700;display:flex;align-items:center;gap:6px}
-  .card .name em{font-style:normal;font-size:11px;color:var(--teal);background:rgba(79,209,197,.14);
-    padding:1px 6px;border-radius:99px}
-  .card .sub{font-size:12px;color:var(--dim);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-  .card .right{flex:0 0 auto;text-align:right}
-  .card .cost{font-weight:800;color:var(--gold);font-size:14px;white-space:nowrap}
-  .card.can .cost{color:#fff2cf}
-  .card:not(.can) .cost{color:var(--bad);opacity:.75}
-  .card .owned{font-size:12px;color:var(--dim);margin-top:2px}
-  .done{border-color:rgba(79,209,197,.35);background:rgba(79,209,197,.08);opacity:.85}
-  .done .cost{color:var(--teal)}
-
-  .note{font-size:12.5px;color:var(--dim);line-height:1.55;padding:0 4px;margin:10px 0 4px}
-
-  /* ---------- buy amount ---------- */
-  .seg{display:flex;gap:6px;margin:0 0 10px}
-  .seg button{flex:1;padding:9px;border-radius:11px;border:1px solid var(--line);
-    background:var(--panel);color:var(--dim);font:inherit;font-weight:700;font-size:13px}
-  .seg button.on{background:rgba(79,209,197,.16);border-color:rgba(79,209,197,.45);color:var(--teal)}
-
-  /* ---------- surface ---------- */
-  .hero{background:linear-gradient(160deg,rgba(203,182,255,.16),rgba(255,255,255,.04));
-    border:1px solid rgba(203,182,255,.28);border-radius:20px;padding:18px;text-align:center;margin-bottom:12px}
-  .hero .big{font-size:40px;font-weight:800;color:var(--pearl);line-height:1.1}
-  .hero .cap{font-size:12px;letter-spacing:1.4px;text-transform:uppercase;color:var(--dim);margin-top:4px}
-  .btn{display:block;width:100%;padding:15px;border-radius:15px;border:0;font:inherit;font-weight:800;
-    font-size:16px;color:#1a1030;background:linear-gradient(90deg,#cbb6ff,#9ae6ff);margin-top:14px}
-  .btn:disabled{background:rgba(255,255,255,.09);color:var(--dim)}
-  .btn.ghost{background:var(--panel);border:1px solid var(--line);color:var(--dim);font-size:14px;padding:12px}
-
-  /* ---------- nav ---------- */
-  nav{
-    position:fixed;left:0;right:0;bottom:0;z-index:6;display:flex;
-    padding-bottom:env(safe-area-inset-bottom);
-    background:rgba(4,20,28,.92);backdrop-filter:blur(14px);border-top:1px solid var(--line);
-  }
-  nav button{flex:1;border:0;background:none;color:var(--dim);font:inherit;font-size:10.5px;
-    letter-spacing:.6px;padding:9px 0 11px;display:flex;flex-direction:column;align-items:center;gap:3px;position:relative}
-  nav button .ni{font-size:21px;line-height:1}
-  nav button.on{color:var(--teal)}
-  nav .dot{position:absolute;top:6px;right:calc(50% - 20px);width:8px;height:8px;border-radius:50%;
-    background:var(--gold);box-shadow:0 0 8px var(--gold);display:none}
-  nav button.alert .dot{display:block}
-
-  /* ---------- modal / toast ---------- */
-  #modal{position:fixed;inset:0;z-index:20;display:none;place-items:center;padding:24px;
-    background:rgba(2,10,15,.82);backdrop-filter:blur(4px)}
-  #modal.on{display:grid}
-  .sheet{width:100%;max-width:340px;background:#0a2432;border:1px solid var(--line);
-    border-radius:22px;padding:22px;text-align:center}
-  .sheet h3{margin:0 0 8px;font-size:20px}
-  .sheet p{margin:0;color:var(--dim);font-size:14px;line-height:1.6}
-  #toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(var(--nav) + env(safe-area-inset-bottom) + 18px);
-    z-index:15;background:#0d3244;border:1px solid var(--line);border-radius:99px;padding:9px 18px;
-    font-size:13px;font-weight:600;opacity:0;transition:opacity .25s;pointer-events:none}
-  #toast.on{opacity:1}
-</style>
+<meta name="theme-color" content="#05060f">
+<meta name="description" content="VOIDBREAKER — a low-poly 3D arcade survival shooter. Survive the waves, break the void.">
+<title>VOIDBREAKER</title>
+<link rel="stylesheet" href="style.css">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' fill='%2305060f'/><path d='M16 5 27 27H5z' fill='%2300e5ff'/></svg>">
 </head>
 <body>
 
-<div id="water"></div><div id="vignette"></div>
+<div id="viewport"></div>
 
-<header>
-  <div class="salvage"><b id="salvage">0</b><span>salvage</span></div>
-  <div class="rate" id="rate">0 / sec</div>
-  <div class="depthbar">
-    <div class="depthrow"><span id="zone">Sunlight Zone</span><span><b id="depth">0 m</b> · <span id="drate">0 m/s</span></span></div>
-    <div class="track"><div class="fill" id="dfill"></div></div>
+<!-- ============================ HUD ============================ -->
+<div id="hud" class="hidden" aria-hidden="true">
+
+  <div class="hud-top">
+    <div class="hud-block left">
+      <div class="label">SCORE</div>
+      <div class="value" id="hud-score">0</div>
+      <div class="sub">BEST <span id="hud-best">0</span></div>
+    </div>
+
+    <div class="hud-block center">
+      <div class="label">WAVE</div>
+      <div class="value" id="hud-wave">1</div>
+      <div class="sub"><span id="hud-remaining">0</span> HOSTILES</div>
+    </div>
+
+    <div class="hud-block right">
+      <div class="label">MULTIPLIER</div>
+      <div class="value" id="hud-mult">x1</div>
+      <div class="combo-track"><div class="combo-fill" id="hud-combo-fill"></div></div>
+    </div>
   </div>
-</header>
 
-<main id="scroll">
-  <!-- DREDGE -->
-  <section class="page on" id="p-dredge">
-    <div class="tapwrap">
-      <button id="tap"><div class="ico">🪝</div><div class="lbl">Dredge</div><div class="val" id="tapval">+1</div></button>
-    </div>
-    <div class="stats">
-      <div class="stat"><i>Per second</i><b id="s-sps">0</b></div>
-      <div class="stat"><i>Per tap</i><b id="s-tap">1</b></div>
-      <div class="stat"><i>Pressure bonus</i><b id="s-press">×1.00</b></div>
-      <div class="stat"><i>Pearl bonus</i><b id="s-pearl">×1.00</b></div>
-    </div>
-    <h2>Ballast</h2>
-    <button class="card" id="ballast">
-      <div class="icon">🌀</div>
-      <div class="body">
-        <div class="name">Ballast Pump</div>
-        <div class="sub" id="ballast-sub">+0.12 m/s descent</div>
+  <div id="boss-bar" class="hidden">
+    <div class="boss-name">VOID WARDEN</div>
+    <div class="boss-track"><div class="boss-fill" id="boss-fill"></div></div>
+  </div>
+
+  <div id="wave-banner" class="hidden"><span id="wave-banner-text">WAVE 1</span></div>
+
+  <div id="toasts"></div>
+
+  <div class="hud-bottom">
+    <div class="powerups" id="hud-powerups"></div>
+    <div class="health-wrap">
+      <div class="health-row">
+        <span class="label">INTEGRITY</span>
+        <span class="value" id="hud-hp-text">100</span>
       </div>
-      <div class="right"><div class="cost" id="ballast-cost">60</div><div class="owned" id="ballast-own">Lv 0</div></div>
-    </button>
-    <p class="note">You sink faster with more ballast. Depth unlocks new crew and multiplies everything you haul up.</p>
-  </section>
-
-  <!-- CREW -->
-  <section class="page" id="p-crew">
-    <div class="seg" id="buyseg">
-      <button data-n="1" class="on">×1</button>
-      <button data-n="10">×10</button>
-      <button data-n="100">×100</button>
-      <button data-n="max">MAX</button>
+      <div class="health-track">
+        <div class="health-fill" id="hud-hp-fill"></div>
+        <div class="health-ghost" id="hud-hp-ghost"></div>
+      </div>
+      <div class="dash-track" title="Dash"><div class="dash-fill" id="hud-dash-fill"></div></div>
     </div>
-    <div id="gens"></div>
-    <p class="note">Every 25 of a crew type doubles its output.</p>
-  </section>
+  </div>
 
-  <!-- RESEARCH -->
-  <section class="page" id="p-research">
-    <div id="upgrades"></div>
-    <p class="note">Research is permanent — it survives surfacing.</p>
-  </section>
+  <div id="damage-vignette"></div>
 
-  <!-- SURFACE -->
-  <section class="page" id="p-surface">
-    <div class="hero">
-      <div class="big" id="pearlgain">0</div>
-      <div class="cap">Pearls on surfacing</div>
-      <button class="btn" id="surface">Surface</button>
+  <button id="btn-pause" class="icon-btn" title="Pause (P)" aria-label="Pause">II</button>
+  <button id="btn-mute" class="icon-btn" title="Mute (M)" aria-label="Mute">&#9834;</button>
+
+  <div id="touch-ui" class="hidden">
+    <div class="stick-zone" id="stick-move"><div class="stick-base"><div class="stick-knob"></div></div></div>
+    <div class="stick-zone" id="stick-aim"><div class="stick-base"><div class="stick-knob"></div></div></div>
+    <button id="btn-dash" class="touch-btn">DASH</button>
+  </div>
+</div>
+
+<!-- ========================= START SCREEN ========================= -->
+<div id="screen-start" class="screen">
+  <div class="panel">
+    <h1 class="logo">VOID<span>BREAKER</span></h1>
+    <p class="tagline">Low-poly arcade survival. Hold the arena. Break the void.</p>
+
+    <div class="rules">
+      <div class="rule"><b>Survive</b> endless waves of geometry. Every fifth wave sends a Warden.</div>
+      <div class="rule"><b>Shoot</b> to kill, <b>collect orbs</b> to bank score, <b>chain kills</b> to raise the multiplier.</div>
+      <div class="rule"><b>Dash</b> through danger — you are invulnerable mid-dash.</div>
     </div>
+
+    <div class="controls-grid">
+      <div class="ctl"><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd><span>Move</span></div>
+      <div class="ctl"><kbd>MOUSE</kbd><span>Aim</span></div>
+      <div class="ctl"><kbd>CLICK</kbd>/<kbd>SPACE</kbd><span>Fire</span></div>
+      <div class="ctl"><kbd>SHIFT</kbd>/<kbd>RMB</kbd><span>Dash</span></div>
+      <div class="ctl"><kbd>P</kbd>/<kbd>ESC</kbd><span>Pause</span></div>
+      <div class="ctl"><kbd>M</kbd><span>Mute</span></div>
+    </div>
+
+    <p class="touch-note">Touch device? Use the left stick to move and the right stick to aim &amp; fire.</p>
+
+    <button id="btn-start" class="cta">START RUN</button>
+    <div class="best-line">HIGH SCORE <span id="start-best">0</span></div>
+  </div>
+</div>
+
+<!-- ========================= PAUSE SCREEN ========================= -->
+<div id="screen-pause" class="screen hidden">
+  <div class="panel small">
+    <h2>PAUSED</h2>
+    <div class="stat-row"><span>SCORE</span><b id="pause-score">0</b></div>
+    <div class="stat-row"><span>WAVE</span><b id="pause-wave">1</b></div>
+    <button id="btn-resume" class="cta">RESUME</button>
+    <button id="btn-quit" class="cta ghost">ABANDON RUN</button>
+  </div>
+</div>
+
+<!-- ======================= GAME OVER SCREEN ======================= -->
+<div id="screen-over" class="screen hidden">
+  <div class="panel">
+    <h2 class="dead">RUN TERMINATED</h2>
+    <div id="new-record" class="record hidden">NEW HIGH SCORE</div>
+    <div class="final-score" id="over-score">0</div>
     <div class="stats">
-      <div class="stat"><i>Pearls held</i><b id="s-pearls">0</b></div>
-      <div class="stat"><i>Dives completed</i><b id="s-dives">0</b></div>
-      <div class="stat"><i>Deepest ever</i><b id="s-deepest">0 m</b></div>
-      <div class="stat"><i>Total salvage</i><b id="s-total">0</b></div>
+      <div class="stat-row"><span>WAVE REACHED</span><b id="over-waves">0</b></div>
+      <div class="stat-row"><span>KILLS</span><b id="over-kills">0</b></div>
+      <div class="stat-row"><span>BEST MULTIPLIER</span><b id="over-mult">x1</b></div>
+      <div class="stat-row"><span>TIME SURVIVED</span><b id="over-time">0:00</b></div>
+      <div class="stat-row"><span>HIGH SCORE</span><b id="over-best">0</b></div>
     </div>
-    <p class="note">Surfacing resets salvage, crew and ballast — you keep pearls and research.
-      Each pearl gives <b>+8%</b> production and <b>+3%</b> descent speed. You need <b>1,000 m</b> to surface with anything.</p>
-    <h2>Save</h2>
-    <button class="btn ghost" id="export">Copy save to clipboard</button>
-    <button class="btn ghost" id="import">Paste save</button>
-    <button class="btn ghost" id="wipe">Erase everything</button>
-  </section>
-</main>
+    <button id="btn-restart" class="cta">RESTART <span class="hint">(R)</span></button>
+    <button id="btn-menu" class="cta ghost">MAIN MENU</button>
+  </div>
+</div>
 
-<nav>
-  <button class="on" data-p="dredge"><span class="ni">🪝</span>DREDGE<span class="dot"></span></button>
-  <button data-p="crew"><span class="ni">🤿</span>CREW<span class="dot"></span></button>
-  <button data-p="research"><span class="ni">🔬</span>RESEARCH<span class="dot"></span></button>
-  <button data-p="surface"><span class="ni">🫧</span>SURFACE<span class="dot"></span></button>
-</nav>
+<!-- ========================= LOAD / ERROR ========================= -->
+<div id="screen-load" class="screen">
+  <div class="panel small">
+    <h2 class="loading-title">VOIDBREAKER</h2>
+    <div class="loader"></div>
+    <p id="load-msg">Booting renderer…</p>
+  </div>
+</div>
 
-<div id="modal"><div class="sheet">
-  <h3 id="m-title"></h3><p id="m-body"></p>
-  <button class="btn" id="m-ok">Dive back in</button>
-</div></div>
-<div id="toast"></div>
-
+<script src="https://cdn.jsdelivr.net/npm/three@0.150.1/build/three.min.js"></script>
 <script>
-"use strict";
-const SAVE_KEY = "abyss.save.v1";
-const $ = s => document.querySelector(s);
-
-/* ------------------------------------------------------------------ data */
-const GENERATORS = [
-  {id:"diver",   icon:"🤿", name:"Free Diver",       base:15,     rate:.2,    depth:0,    sub:"Holds their breath. Mostly."},
-  {id:"drone",   icon:"🛸", name:"Salvage Drone",    base:130,    rate:1.6,   depth:30,   sub:"Tethered, tireless, slightly dented."},
-  {id:"crawler", icon:"🦀", name:"Seabed Crawler",   base:1500,   rate:9,     depth:120,  sub:"Walks the silt, sifting for metal."},
-  {id:"sub",     icon:"🚤", name:"Submersible",      base:22000,  rate:47,    depth:450,  sub:"Two seats, one very thick window."},
-  {id:"rig",     icon:"🏗️", name:"Dredging Rig",     base:350000, rate:260,   depth:1100, sub:"Chews through the seabed by the tonne."},
-  {id:"trench",  icon:"⚙️", name:"Trench Harvester", base:5.2e6,  rate:1400,  depth:2400, sub:"Built for pressure that folds steel."},
-  {id:"kraken",  icon:"🦑", name:"Kraken Arm",       base:8e7,    rate:7800,  depth:4800, sub:"Nine joints. Nobody designed the ninth."},
-  {id:"maw",     icon:"🕳️", name:"Abyssal Maw",      base:1.1e9,  rate:44000, depth:8500, sub:"It salvages. Do not ask how."},
-];
-
-const UPGRADES = [
-  {id:"hooks",    icon:"🪝", name:"Barbed Hooks",      cost:50,    target:"click",  mult:3,    depth:0,    sub:"Tap yield ×3"},
-  {id:"lamps",    icon:"💡", name:"Halogen Lamps",     cost:700,   target:"diver",  mult:3,    depth:25,   sub:"Free Divers ×3"},
-  {id:"thrust",   icon:"💨", name:"Descent Thrusters", cost:1600,  target:"descent",mult:1.5,  depth:55,   sub:"Descent speed ×1.5"},
-  {id:"winch",    icon:"🎣", name:"Powered Winch",     cost:6000,  target:"click",  mult:4,    depth:110,  sub:"Tap yield ×4"},
-  {id:"sonar",    icon:"📡", name:"Wide-Band Sonar",   cost:20000, target:"all",    mult:1.5,  depth:170,  sub:"All production ×1.5"},
-  {id:"netting",  icon:"🕸️", name:"Smart Netting",     cost:9e4,   target:"drone",  mult:3,    depth:300,  sub:"Salvage Drones ×3"},
-  {id:"claw",     icon:"🦾", name:"Auto-Claw",         cost:2.4e5, target:"share",  mult:.05,  depth:420,  sub:"Taps also give 5% of your per-second"},
-  {id:"tracks",   icon:"🛞", name:"Diamond Tracks",    cost:7e5,   target:"crawler",mult:3,    depth:650,  sub:"Seabed Crawlers ×3"},
-  {id:"glass",    icon:"🔮", name:"Deepglass Optics",  cost:3e6,   target:"all",    mult:2,    depth:900,  sub:"All production ×2"},
-  {id:"ai",       icon:"🧠", name:"Ballast AI",        cost:1.2e7, target:"descent",mult:1.75, depth:1300, sub:"Descent speed ×1.75"},
-  {id:"hull",     icon:"🛡️", name:"Pressure Hull",     cost:2e8,   target:"all",    mult:2.5,  depth:2600, sub:"All production ×2.5"},
-  {id:"anchor",   icon:"⚓", name:"Gravity Anchor",    cost:4e9,   target:"descent",mult:2,    depth:3600, sub:"Descent speed ×2"},
-  {id:"qclaw",    icon:"⚛️", name:"Quantum Claw",      cost:6e10,  target:"share",  mult:.15,  depth:4600, sub:"Taps also give 15% of your per-second"},
-  {id:"chorus",   icon:"🐋", name:"Whale Chorus",      cost:9e11,  target:"all",    mult:3,    depth:6200, sub:"All production ×3"},
-  {id:"singular", icon:"🌌", name:"Singularity Net",   cost:5e13,  target:"all",    mult:5,    depth:9500, sub:"All production ×5"},
-];
-
-const ZONES = [
-  {d:0,    name:"Sunlight Zone",  top:[26,110,130], bot:[10,60,84]},
-  {d:200,  name:"Twilight Zone",  top:[14,72,96],   bot:[6,36,56]},
-  {d:1000, name:"Midnight Zone",  top:[8,40,62],    bot:[3,18,32]},
-  {d:3000, name:"Abyssal Plain",  top:[5,24,40],    bot:[2,9,18]},
-  {d:6000, name:"Hadal Trench",   top:[10,14,34],   bot:[2,4,12]},
-  {d:9000, name:"The Unmapped",   top:[22,8,38],    bot:[3,2,10]},
-];
-
-/* ----------------------------------------------------------------- state */
-function newGame(){
-  return {salvage:0, total:0, depth:0, deepest:0, pearls:0, dives:0, ballast:0,
-          gens:{}, ups:{}, saved:Date.now()};
-}
-let S = newGame();
-let buyAmt = 1, lastFrame = performance.now(), sinceSave = 0, seenTabs = {};
-
-/* ------------------------------------------------------------------ math */
-function fmt(n){
-  if(!isFinite(n)) return "∞";
-  if(n < 0) return "-" + fmt(-n);
-  if(n < 1000) return n < 10 ? (Math.round(n*10)/10).toString() : Math.floor(n).toString();
-  const U = ["","K","M","B","T","Qa","Qi","Sx","Sp","Oc","No","Dc","Ud","Dd"];
-  let t = Math.floor(Math.log10(n)/3);
-  if(t >= U.length) return n.toExponential(2).replace("e+","e");
-  const v = n / Math.pow(1000,t);
-  return (v < 10 ? v.toFixed(2) : v < 100 ? v.toFixed(1) : Math.floor(v)) + U[t];
-}
-const has = id => !!S.ups[id];
-const owned = id => S.gens[id] || 0;
-
-function genOutput(g){
-  const n = owned(g.id);
-  if(!n) return 0;
-  let m = Math.pow(2, Math.floor(n/25));
-  for(const u of UPGRADES) if(u.target === g.id && has(u.id)) m *= u.mult;
-  return g.rate * n * m;
-}
-function pressureMult(){ return 1 + S.depth/400; }
-function pearlMult(){ return 1 + S.pearls*.08; }
-function globalMult(){
-  let m = pressureMult() * pearlMult();
-  for(const u of UPGRADES) if(u.target === "all" && has(u.id)) m *= u.mult;
-  return m;
-}
-function sps(){
-  let raw = 0;
-  for(const g of GENERATORS) raw += genOutput(g);
-  return raw * globalMult();
-}
-function tapShare(){
-  let s = 0;
-  for(const u of UPGRADES) if(u.target === "share" && has(u.id)) s += u.mult;
-  return s;
-}
-function tapPower(){
-  let base = 1;
-  for(const u of UPGRADES) if(u.target === "click" && has(u.id)) base *= u.mult;
-  return base * globalMult() + sps() * tapShare();
-}
-// water fights back the deeper you go — keeps depth from running away late
-function drag(){ return 1 + Math.pow(S.depth/2000, .85); }
-function thrust(){
-  let r = (.3 + S.ballast*.15) * (1 + S.pearls*.03);
-  for(const u of UPGRADES) if(u.target === "descent" && has(u.id)) r *= u.mult;
-  return r;
-}
-function descentRate(){ return thrust()/drag(); }
-const ballastCost = () => Math.ceil(45 * Math.pow(1.26, S.ballast));
-const genCost = (g,n) => Math.ceil(g.base * Math.pow(1.15, owned(g.id)) * (Math.pow(1.15,n)-1) / .15);
-
-function maxAffordable(g){
-  let lo = 0, hi = 1;
-  while(genCost(g,hi) <= S.salvage && hi < 1e5) hi *= 2;
-  while(lo < hi){ const mid = Math.ceil((lo+hi)/2); genCost(g,mid) <= S.salvage ? lo = mid : hi = mid-1; }
-  return lo;
-}
-const wantCount = g => buyAmt === "max" ? Math.max(1, maxAffordable(g)) : buyAmt;
-const pearlGain = () => S.depth < 1000 ? 0 : Math.floor(Math.pow(S.depth/1000, 1.2) * 4);
-const zoneAt = d => ZONES.reduce((a,z) => d >= z.d ? z : a, ZONES[0]);
-
-/* ---------------------------------------------------------------- actions */
-function doTap(e){
-  const v = tapPower();
-  S.salvage += v; S.total += v;
-  const r = $("#tap").getBoundingClientRect();
-  const f = document.createElement("div");
-  f.className = "float"; f.textContent = "+" + fmt(v);
-  f.style.left = (r.left + r.width*(.25 + Math.random()*.5)) + "px";
-  f.style.top  = (r.top  + r.height*(.08 + Math.random()*.18)) + "px";
-  document.body.appendChild(f);
-  setTimeout(() => f.remove(), 850);
-  if(navigator.vibrate) navigator.vibrate(6);
-  paint();
-}
-function buyGen(g){
-  if(S.depth < g.depth) return;
-  const n = wantCount(g), c = genCost(g,n);
-  if(S.salvage < c) return toast("Not enough salvage");
-  S.salvage -= c; S.gens[g.id] = owned(g.id) + n;
-  render(); paint();
-}
-function buyUp(u){
-  if(has(u.id) || S.deepest < u.depth) return;
-  if(S.salvage < u.cost) return toast("Not enough salvage");
-  S.salvage -= u.cost; S.ups[u.id] = 1;
-  toast(u.name + " installed");
-  render(); paint();
-}
-function buyBallast(){
-  const c = ballastCost();
-  if(S.salvage < c) return toast("Not enough salvage");
-  S.salvage -= c; S.ballast++;
-  paint();
-}
-function surface(){
-  const p = pearlGain();
-  if(p <= 0) return toast("Reach 1,000 m first");
-  S.pearls += p; S.dives++;
-  S.salvage = 0; S.depth = 0; S.ballast = 0; S.gens = {};
-  show("Surfaced", "You bring up <b>" + fmt(p) + "</b> pearl" + (p===1?"":"s") +
-       ". Production is now <b>×" + (pearlMult()).toFixed(2) + "</b>.");
-  render(); paint(); save();
-}
-
-/* ------------------------------------------------------------------- loop */
-function tick(now){
-  const dt = Math.min((now - lastFrame)/1000, .5);
-  lastFrame = now;
-  const gain = sps()*dt;
-  S.salvage += gain; S.total += gain;
-  S.depth += descentRate()*dt;
-  if(S.depth > S.deepest) S.deepest = S.depth;
-  sinceSave += dt;
-  if(sinceSave > 10){ sinceSave = 0; save(); }
-  paint();
-  requestAnimationFrame(tick);
-}
-
-/* ------------------------------------------------------------------ paint */
-let lastZone = null, structureDirty = true;
-
-function paint(){
-  const rate = sps(), tap = tapPower(), d = S.depth;
-  $("#salvage").textContent = fmt(S.salvage);
-  $("#rate").textContent = fmt(rate) + " / sec";
-  $("#depth").textContent = fmt(d) + " m";
-  $("#drate").textContent = descentRate().toFixed(2) + " m/s";
-  $("#tapval").textContent = "+" + fmt(tap);
-
-  const z = zoneAt(d), zi = ZONES.indexOf(z), next = ZONES[zi+1];
-  $("#zone").textContent = z.name;
-  $("#dfill").style.width = (next ? Math.min(100,(d-z.d)/(next.d-z.d)*100) : 100) + "%";
-  if(z !== lastZone){ lastZone = z; paintWater(z); }
-
-  $("#s-sps").textContent   = fmt(rate);
-  $("#s-tap").textContent   = fmt(tap);
-  $("#s-press").textContent = "×" + pressureMult().toFixed(2);
-  $("#s-pearl").textContent = "×" + pearlMult().toFixed(2);
-  $("#ballast-cost").textContent = fmt(ballastCost());
-  $("#ballast-own").textContent  = "Lv " + S.ballast;
-  $("#ballast").classList.toggle("can", S.salvage >= ballastCost());
-
-  $("#pearlgain").textContent = fmt(pearlGain());
-  $("#surface").disabled = pearlGain() <= 0;
-  $("#s-pearls").textContent  = fmt(S.pearls);
-  $("#s-dives").textContent   = S.dives;
-  $("#s-deepest").textContent = fmt(S.deepest) + " m";
-  $("#s-total").textContent   = fmt(S.total);
-
-  // unlocking a card changes the list structure
-  const unlockedNow = GENERATORS.filter(g => d >= g.depth).length +
-                      UPGRADES.filter(u => S.deepest >= u.depth).length;
-  if(unlockedNow !== paint._u){ paint._u = unlockedNow; structureDirty = true; }
-  if(structureDirty){ structureDirty = false; render(); }
-  else refreshPrices();
-  paintNav();
-}
-
-function paintWater(z){
-  const t = "rgb(" + z.top.join(",") + ")", b = "rgb(" + z.bot.join(",") + ")";
-  $("#water").style.background = "linear-gradient(" + t + "," + b + ")";
-  document.querySelector('meta[name=theme-color]').setAttribute("content", t);
-}
-
-function render(){
-  const gens = $("#gens"); gens.innerHTML = "";
-  for(const g of GENERATORS){
-    const unlocked = S.depth >= g.depth;
-    const n = wantCount(g), c = genCost(g,n), cnt = owned(g.id);
-    const el = document.createElement("button");
-    el.className = "card" + (unlocked ? "" : " locked");
-    el.dataset.gen = g.id;
-    el.innerHTML =
-      '<div class="icon">' + (unlocked ? g.icon : "🔒") + '</div>' +
-      '<div class="body"><div class="name">' + (unlocked ? g.name : "???") +
-        (cnt >= 25 ? ' <em>×' + Math.pow(2,Math.floor(cnt/25)) + '</em>' : '') + '</div>' +
-        '<div class="sub">' + (unlocked
-          ? (cnt ? fmt(genOutput(g)*globalMult()) + "/s total · " : "") + fmt(g.rate) + "/s each"
-          : "Reach " + fmt(g.depth) + " m") + '</div></div>' +
-      '<div class="right"><div class="cost">' + (unlocked ? fmt(c) + (n>1?" ×"+n:"") : "—") +
-        '</div><div class="owned">' + cnt + ' owned</div></div>';
-    if(unlocked) el.onclick = () => buyGen(g);
-    gens.appendChild(el);
+  // Fallback CDN if the first one is blocked/unavailable.
+  if (!window.THREE) {
+    document.write('<script src="https:\/\/unpkg.com\/three@0.150.1\/build\/three.min.js"><\/script>');
   }
-
-  const ups = $("#upgrades"); ups.innerHTML = "";
-  let hiddenFrom = null;
-  for(const u of UPGRADES){
-    if(has(u.id)){ ups.appendChild(upCard(u,"done")); continue; }
-    if(S.deepest < u.depth){ hiddenFrom = hiddenFrom ?? u; continue; }
-    ups.appendChild(upCard(u,""));
-  }
-  if(hiddenFrom){
-    const el = document.createElement("button");
-    el.className = "card locked";
-    el.innerHTML = '<div class="icon">🔒</div><div class="body"><div class="name">Sealed research</div>' +
-      '<div class="sub">Next unlocks at ' + fmt(hiddenFrom.depth) + ' m</div></div>';
-    ups.appendChild(el);
-  }
-  refreshPrices();
-}
-function upCard(u, cls){
-  const el = document.createElement("button");
-  el.className = "card " + cls;
-  el.dataset.up = u.id;
-  el.innerHTML =
-    '<div class="icon">' + u.icon + '</div>' +
-    '<div class="body"><div class="name">' + u.name + '</div><div class="sub">' + u.sub + '</div></div>' +
-    '<div class="right"><div class="cost">' + (cls === "done" ? "OWNED" : fmt(u.cost)) + '</div></div>';
-  if(cls !== "done") el.onclick = () => buyUp(u);
-  return el;
-}
-
-function refreshPrices(){
-  for(const g of GENERATORS){
-    const el = document.querySelector('[data-gen="' + g.id + '"]');
-    if(!el || S.depth < g.depth) continue;
-    const n = wantCount(g), c = genCost(g,n);
-    el.querySelector(".cost").textContent = fmt(c) + (n > 1 ? " ×" + n : "");
-    el.classList.toggle("can", S.salvage >= c);
-  }
-  for(const u of UPGRADES){
-    const el = document.querySelector('[data-up="' + u.id + '"]');
-    if(!el || has(u.id)) continue;
-    el.classList.toggle("can", S.salvage >= u.cost);
-  }
-}
-
-function paintNav(){
-  const affordCrew = GENERATORS.some(g => S.depth >= g.depth && S.salvage >= genCost(g,1));
-  const affordUp   = UPGRADES.some(u => !has(u.id) && S.deepest >= u.depth && S.salvage >= u.cost);
-  mark("crew", affordCrew); mark("research", affordUp); mark("surface", pearlGain() > 0);
-}
-function mark(page, on){
-  const b = document.querySelector('nav [data-p="' + page + '"]');
-  b.classList.toggle("alert", on && !b.classList.contains("on"));
-}
-
-/* --------------------------------------------------------------- plumbing */
-function go(page){
-  document.querySelectorAll(".page").forEach(p => p.classList.toggle("on", p.id === "p-" + page));
-  document.querySelectorAll("nav button").forEach(b => b.classList.toggle("on", b.dataset.p === page));
-  $("#scroll").scrollTop = 0;
-  seenTabs[page] = true;
-  paint();
-}
-let toastTimer;
-function toast(msg){
-  const t = $("#toast"); t.textContent = msg; t.classList.add("on");
-  clearTimeout(toastTimer); toastTimer = setTimeout(() => t.classList.remove("on"), 1600);
-}
-function show(title, body){
-  $("#m-title").innerHTML = title; $("#m-body").innerHTML = body; $("#modal").classList.add("on");
-}
-
-/* ------------------------------------------------------------------- save */
-function save(){
-  S.saved = Date.now();
-  try{ localStorage.setItem(SAVE_KEY, JSON.stringify(S)); }catch(e){}
-}
-function load(){
-  let raw;
-  try{ raw = localStorage.getItem(SAVE_KEY); }catch(e){ return; }
-  if(!raw) return;
-  try{
-    const d = JSON.parse(raw);
-    S = Object.assign(newGame(), d);
-    S.gens = d.gens || {}; S.ups = d.ups || {};
-    offline();
-  }catch(e){ console.warn("bad save", e); }
-}
-function offline(){
-  const secs = Math.min((Date.now() - (S.saved || Date.now()))/1000, 12*3600);
-  if(secs < 60) return;
-  const earned = sps()*secs, sunk = descentRate()*secs;
-  S.salvage += earned; S.total += earned; S.depth += sunk;
-  if(S.depth > S.deepest) S.deepest = S.depth;
-  const h = Math.floor(secs/3600), m = Math.floor(secs%3600/60);
-  show("While you were away", "The crew kept working for <b>" + (h ? h + "h " : "") + m + "m</b>.<br><br>" +
-       "<b>+" + fmt(earned) + "</b> salvage<br><b>+" + fmt(sunk) + " m</b> deeper");
-}
-
-/* ------------------------------------------------------------------ wiring */
-$("#tap").addEventListener("pointerdown", e => { e.preventDefault(); doTap(e); });
-$("#ballast").onclick = buyBallast;
-$("#surface").onclick = surface;
-$("#m-ok").onclick = () => $("#modal").classList.remove("on");
-document.querySelectorAll("nav button").forEach(b => b.onclick = () => go(b.dataset.p));
-document.querySelectorAll("#buyseg button").forEach(b => b.onclick = () => {
-  document.querySelectorAll("#buyseg button").forEach(x => x.classList.remove("on"));
-  b.classList.add("on");
-  buyAmt = b.dataset.n === "max" ? "max" : +b.dataset.n;
-  render();
-});
-$("#export").onclick = async () => {
-  save();
-  const code = btoa(unescape(encodeURIComponent(JSON.stringify(S))));
-  try{ await navigator.clipboard.writeText(code); toast("Save copied"); }
-  catch(e){ prompt("Copy your save:", code); }
-};
-$("#import").onclick = () => {
-  const code = prompt("Paste a save code:");
-  if(!code) return;
-  try{
-    S = Object.assign(newGame(), JSON.parse(decodeURIComponent(escape(atob(code.trim())))));
-    save(); structureDirty = true; paint(); toast("Save loaded");
-  }catch(e){ toast("That code didn't parse"); }
-};
-$("#wipe").onclick = () => {
-  if(!confirm("Erase your save permanently?")) return;
-  S = newGame(); save(); structureDirty = true; paint(); go("dredge"); toast("Wiped");
-};
-document.addEventListener("visibilitychange", () => {
-  if(document.hidden) save();
-  else { lastFrame = performance.now(); offline(); }
-});
-window.addEventListener("beforeunload", save);
-document.addEventListener("gesturestart", e => e.preventDefault());
-
-load();
-render();
-paint();
-requestAnimationFrame(tick);
 </script>
+<script src="game.js"></script>
 </body>
 </html>
